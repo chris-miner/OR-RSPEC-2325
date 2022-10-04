@@ -29,7 +29,7 @@ java {
     }
 }
 
-group = "org.openrewrite.recipe"
+group = "dev.c00a5b70.recipe"
 description = "Rewrite recipes."
 
 repositories {
