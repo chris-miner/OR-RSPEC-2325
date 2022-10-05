@@ -18,15 +18,15 @@ public class Rspec2325RecipeTest implements RewriteTest {
     rewriteRun(
         java(
             """
-                class SampleClass {
-                    private Boolean sampleMethod() {
+                class C {
+                    private Boolean m1() {
                         return true;
                     }
                 }
                 """,
             """
-                class SampleClass {
-                    private static Boolean sampleMethod() {
+                class C {
+                    private static Boolean m1() {
                         return true;
                     }
                 }
@@ -38,18 +38,130 @@ public class Rspec2325RecipeTest implements RewriteTest {
     rewriteRun(
         java(
             """
-                class SampleClass {
-                    final Boolean sampleMethod() {
+                class C {
+                    final Boolean m1() {
                         return true;
                     }
                 }
                 """,
             """
-                class SampleClass {
-                    static final Boolean sampleMethod() {
+                class C {
+                    static final Boolean m1() {
                         return true;
                     }
                 }
                 """));
   }
+
+  @Test
+  void finalMethodInstanceDataUnchanged() {
+    rewriteRun(
+        java(
+            """
+                class C {
+                    Boolean iVar = true;
+                    final Boolean m1() {
+                        return iVar;
+                    }
+                }
+                """));
+  }
+
+  @Test
+  void seriesMethodsUnchangedChanged() {
+    rewriteRun(
+        java(
+            """
+                class C {
+                    Boolean iVar = true;
+                    final Boolean m1() {
+                        return iVar;
+                    }
+
+                    final Boolean m1() {
+                        return true;
+                    }
+                }
+                """,
+            """
+                class C {
+                    Boolean iVar = true;
+                    final Boolean m1() {
+                        return iVar;
+                    }
+
+                    static final Boolean m1() {
+                        return true;
+                    }
+                }
+                """));
+  }
+
+  @Test
+  void seriesMethodsChangedUnchanged() {
+    rewriteRun(
+        java(
+            """
+                class C {
+                    final Boolean m1() {
+                        return true;
+                    }
+
+                    Boolean iVar = true;
+                    final Boolean m1() {
+                        return iVar;
+                    }
+                }
+                """,
+            """
+                class C {
+                    static final Boolean m1() {
+                        return true;
+                    }
+
+                    Boolean iVar = true;
+                    final Boolean m1() {
+                        return iVar;
+                    }
+                }
+                """));
+  }
+
+  void seriesMethodsChangedUnchangedChanged() {
+    rewriteRun(
+        java(
+            """
+                class C {
+                    final Boolean m1() {
+                        return true;
+                    }
+
+                    Boolean iVar = true;
+                    final Boolean m1() {
+                        return iVar;
+                    }
+
+                    final Boolean m2() {
+                        return true;
+                    }
+                }
+                """,
+            """
+                    class C {
+                    final Boolean m1() {
+                        return true;
+                    }
+
+                    Boolean iVar = true;
+                    final Boolean m1() {
+                        return iVar;
+                    }
+
+                    final Boolean m2() {
+                        return true;
+                    }
+                }
+                    """));
+  }
+
 }

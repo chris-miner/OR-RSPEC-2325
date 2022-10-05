@@ -51,15 +51,17 @@ public class Rspec2325Recipe extends Recipe {
 
         @Override
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext p) {
-            Boolean isPrivateOrFinal = (method.hasModifier(J.Modifier.Type.Private)
-                    || method.hasModifier(J.Modifier.Type.Final));
-
             J.MethodDeclaration md = super.visitMethodDeclaration(method, p);
-            // Check if class variables were used in this method
+
             if (!instanceVariableUsedInMethod) {
-                if (isPrivateOrFinal && !md.hasModifier(J.Modifier.Type.Static)) {
+
+                if ((md.hasModifier(J.Modifier.Type.Private)
+                        || md.hasModifier(J.Modifier.Type.Final))
+                        && !md.hasModifier(J.Modifier.Type.Static)) {
+
                     J.Modifier mod = new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, J.Modifier.Type.Static,
                             Collections.emptyList());
+
                     md = md.withModifiers(ModifierOrder.sortModifiers(ListUtils.concat(mod, md.getModifiers())));
                     md = autoFormat(md, md, p, getCursor().getParent());
                 }
