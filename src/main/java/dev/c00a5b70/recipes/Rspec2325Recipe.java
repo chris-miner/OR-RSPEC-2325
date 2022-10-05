@@ -36,8 +36,6 @@ public class Rspec2325Recipe extends Recipe {
 
     public class StaticKeywordVisitor extends JavaIsoVisitor<ExecutionContext> {
 
-        private J.MethodDeclaration curMethod;
-        private Boolean classVariableUsedInMethod = false;
         private Boolean instanceVariableUsedInMethod = false;
 
         @Override
@@ -45,41 +43,14 @@ public class Rspec2325Recipe extends Recipe {
             @Nullable
             Variable variable = identifier.getFieldType();
 
-            // fieldType is non-null for identifiers that are variable references
-            if (variable != null) {
-                // Check if this is a class variable
-                if (variable.getOwner() instanceof JavaType.Class) {
-                    if (variable.hasFlags(Flag.Static)) {
-                        if (curMethod == null) {
-                            System.out.println("Class variable: " + variable.getName());
-                        } else if (curMethod != null) {
-                            System.out.println("Class variable: " + variable.getName() + " used in method: "
-                                    + curMethod.getSimpleName());
-                            classVariableUsedInMethod = true;
-                        }
-                    } else {
-                        System.out.println("Instance variable: " + variable.getName());
-                        instanceVariableUsedInMethod = true;
-                    }
-                }
-
-                // or maybe a method variable
-                else if (variable.getOwner() instanceof JavaType.Method) {
-                    System.out.println("Method variable: " + variable.getName());
-                }
-
-                // or something else
-                else {
-                    System.out.println("Unknown variable type: " + variable.getName());
-                }
-            }
+            instanceVariableUsedInMethod = (variable != null && variable.getOwner() instanceof JavaType.Class
+                    && !variable.hasFlags(Flag.Static));
 
             return super.visitIdentifier(identifier, p);
         }
 
         @Override
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext p) {
-            curMethod = method;
             Boolean isPrivateOrFinal = (method.hasModifier(J.Modifier.Type.Private)
                     || method.hasModifier(J.Modifier.Type.Final));
 
