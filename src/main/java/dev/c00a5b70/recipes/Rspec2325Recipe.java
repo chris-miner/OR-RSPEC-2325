@@ -11,6 +11,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.cleanup.ModifierOrder;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.J.Identifier;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.JavaType.Variable;
 import org.openrewrite.java.tree.Space;
@@ -36,32 +37,43 @@ public class Rspec2325Recipe extends Recipe {
 
   public class StaticKeywordVisitor extends JavaIsoVisitor<ExecutionContext> {
 
-    private Boolean instanceVariableUsedFlag = false;
+    private Boolean isIntanceVariableUsed = false;
+    private Boolean visitingMethod = false;
 
     @Override
     public J.Identifier visitIdentifier(J.Identifier identifier, ExecutionContext p) {
-      @Nullable
-      Variable variable = identifier.getFieldType();
+      Identifier id = super.visitIdentifier(identifier, p);
 
-      // Found class or instance variable reference
-      if (variable != null && variable.getOwner() instanceof JavaType.Class) {
-        // If we havn't already found an instance variable reference, check if this is
-        // one
-        if (!instanceVariableUsedFlag) {
-          instanceVariableUsedFlag = !variable.hasFlags(Flag.Static);
+      if (visitingMethod) {
+
+        @Nullable
+        Variable variable = id.getFieldType();
+
+        // Found class or instance variable reference
+        if (variable != null && variable.getOwner() instanceof JavaType.Class) {
+          // If we havn't already found an instance variable reference, check if this is
+          // one
+          if (!isIntanceVariableUsed) {
+            isIntanceVariableUsed = !variable.hasFlags(Flag.Static);
+          }
         }
       }
 
-      return super.visitIdentifier(identifier, p);
+      return id;
     }
 
     @Override
     public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext p) {
-      instanceVariableUsedFlag = false;
+      // reset instance variable flag
+      isIntanceVariableUsed = false;
 
+      // set visiting method flag to ignore identifiers not found in a method body
+      visitingMethod = true;
       J.MethodDeclaration md = super.visitMethodDeclaration(method, p);
+      // done visiting method
+      visitingMethod = false;
 
-      if (!instanceVariableUsedFlag) {
+      if (!isIntanceVariableUsed) {
 
         if ((md.hasModifier(J.Modifier.Type.Private)
             || md.hasModifier(J.Modifier.Type.Final))
