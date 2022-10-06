@@ -36,17 +36,20 @@ public class Rspec2325Recipe extends Recipe {
 
   public class StaticKeywordVisitor extends JavaIsoVisitor<ExecutionContext> {
 
-    private Boolean instanceVariableUsedInMethod = false;
+    private Boolean instanceVariableUsedFlag = false;
 
     @Override
     public J.Identifier visitIdentifier(J.Identifier identifier, ExecutionContext p) {
       @Nullable
       Variable variable = identifier.getFieldType();
 
-      // variable belongs to class
+      // Found class or instance variable reference
       if (variable != null && variable.getOwner() instanceof JavaType.Class) {
-        // is it an instance variable?
-        instanceVariableUsedInMethod = !variable.hasFlags(Flag.Static);
+        // If we havn't already found an instance variable reference, check if this is
+        // one
+        if (!instanceVariableUsedFlag) {
+          instanceVariableUsedFlag = !variable.hasFlags(Flag.Static);
+        }
       }
 
       return super.visitIdentifier(identifier, p);
@@ -54,11 +57,11 @@ public class Rspec2325Recipe extends Recipe {
 
     @Override
     public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext p) {
-      instanceVariableUsedInMethod = false;
+      instanceVariableUsedFlag = false;
 
       J.MethodDeclaration md = super.visitMethodDeclaration(method, p);
 
-      if (!instanceVariableUsedInMethod) {
+      if (!instanceVariableUsedFlag) {
 
         if ((md.hasModifier(J.Modifier.Type.Private)
             || md.hasModifier(J.Modifier.Type.Final))

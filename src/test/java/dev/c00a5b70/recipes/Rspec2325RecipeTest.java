@@ -14,7 +14,7 @@ public class Rspec2325RecipeTest implements RewriteTest {
   }
 
   @Test
-  void privateMethodNoInstanceDataIsStatic() {
+  void privateMethodNoInstanceDataAddStatic() {
     rewriteRun(
         java(
             """
@@ -34,7 +34,7 @@ public class Rspec2325RecipeTest implements RewriteTest {
   }
 
   @Test
-  void finalMethodNoInstanceDataIsStatic() {
+  void finalMethodNoInstanceDataAddStatic() {
     rewriteRun(
         java(
             """
@@ -68,7 +68,7 @@ public class Rspec2325RecipeTest implements RewriteTest {
   }
 
   @Test
-  void seriesMethodsUnchangedChanged() {
+  void mixedMethodsUnchangedChangedAddStatic() {
     rewriteRun(
         java(
             """
@@ -98,7 +98,7 @@ public class Rspec2325RecipeTest implements RewriteTest {
   }
 
   @Test
-  void seriesMethodsChangedUnchanged() {
+  void mixedMethodsChangedUnchangedAddStatic() {
     rewriteRun(
         java(
             """
@@ -128,7 +128,7 @@ public class Rspec2325RecipeTest implements RewriteTest {
   }
 
   @Test
-  void seriesMethodsChangedUnchangedChanged() {
+  void mixedMethodsChangedUnchangedChangedAddStatic() {
     rewriteRun(
         java(
             """
@@ -165,4 +165,37 @@ public class Rspec2325RecipeTest implements RewriteTest {
                     """));
   }
 
+  @Test
+  void mixedVariableRefsInstStaticUnchanged() {
+    rewriteRun(
+        java(
+            """
+                class C {
+                    static Boolean sVar = true;
+                    Boolean iVar = true;
+                    final Boolean m1() {
+                      iVar = false;
+                      sVar = false;
+                      return false;
+                    }
+                }
+                """));
+  }
+
+  @Test
+  void mixedVariableRefsStaticInstUnchanged() {
+    rewriteRun(
+        java(
+            """
+                class C {
+                    static Boolean sVar = true;
+                    Boolean iVar = true;
+                    final Boolean m1() {
+                      sVar = false;
+                      iVar = false;
+                      return false;
+                    }
+                }
+                """));
+  }
 }
