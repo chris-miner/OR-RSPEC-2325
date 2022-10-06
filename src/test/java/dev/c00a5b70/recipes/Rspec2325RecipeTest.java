@@ -127,6 +127,7 @@ public class Rspec2325RecipeTest implements RewriteTest {
                 """));
   }
 
+  @Test
   void seriesMethodsChangedUnchangedChanged() {
     rewriteRun(
         java(
@@ -147,8 +148,8 @@ public class Rspec2325RecipeTest implements RewriteTest {
                 }
                 """,
             """
-                    class C {
-                    final Boolean m1() {
+                class C {
+                    static final Boolean m1() {
                         return true;
                     }
 
@@ -157,7 +158,7 @@ public class Rspec2325RecipeTest implements RewriteTest {
                         return iVar;
                     }
 
-                    final Boolean m2() {
+                    static final Boolean m2() {
                         return true;
                     }
                 }

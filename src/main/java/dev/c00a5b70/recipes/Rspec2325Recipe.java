@@ -18,57 +18,62 @@ import org.openrewrite.marker.Markers;
 
 public class Rspec2325Recipe extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "'private' and 'final' methods that don't access instance data should be 'static'";
-    }
+  @Override
+  public String getDisplayName() {
+    return "'private' and 'final' methods that don't access instance data should be 'static'";
+  }
+
+  @Override
+  public String getDescription() {
+    return "Non-overridable methods (private or final) that don't access instance data can be static to prevent any misunderstanding about the contract of the method.";
+  }
+
+  protected JavaIsoVisitor<ExecutionContext> getVisitor() {
+    // getVisitor() should always return a new instance of the visitor to avoid any
+    // state leaking between cycles
+    return new StaticKeywordVisitor();
+  }
+
+  public class StaticKeywordVisitor extends JavaIsoVisitor<ExecutionContext> {
+
+    private Boolean instanceVariableUsedInMethod = false;
 
     @Override
-    public String getDescription() {
-        return "Non-overridable methods (private or final) that don't access instance data can be static to prevent any misunderstanding about the contract of the method.";
+    public J.Identifier visitIdentifier(J.Identifier identifier, ExecutionContext p) {
+      @Nullable
+      Variable variable = identifier.getFieldType();
+
+      // variable belongs to class
+      if (variable != null && variable.getOwner() instanceof JavaType.Class) {
+        // is it an instance variable?
+        instanceVariableUsedInMethod = !variable.hasFlags(Flag.Static);
+      }
+
+      return super.visitIdentifier(identifier, p);
     }
 
-    protected JavaIsoVisitor<ExecutionContext> getVisitor() {
-        // getVisitor() should always return a new instance of the visitor to avoid any
-        // state leaking between cycles
-        return new StaticKeywordVisitor();
-    }
+    @Override
+    public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext p) {
+      instanceVariableUsedInMethod = false;
 
-    public class StaticKeywordVisitor extends JavaIsoVisitor<ExecutionContext> {
+      J.MethodDeclaration md = super.visitMethodDeclaration(method, p);
 
-        private Boolean instanceVariableUsedInMethod = false;
+      if (!instanceVariableUsedInMethod) {
 
-        @Override
-        public J.Identifier visitIdentifier(J.Identifier identifier, ExecutionContext p) {
-            @Nullable
-            Variable variable = identifier.getFieldType();
+        if ((md.hasModifier(J.Modifier.Type.Private)
+            || md.hasModifier(J.Modifier.Type.Final))
+            && !md.hasModifier(J.Modifier.Type.Static)) {
 
-            instanceVariableUsedInMethod = (variable != null && variable.getOwner() instanceof JavaType.Class
-                    && !variable.hasFlags(Flag.Static));
+          J.Modifier mod = new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, J.Modifier.Type.Static,
+              Collections.emptyList());
 
-            return super.visitIdentifier(identifier, p);
+          md = md.withModifiers(ModifierOrder.sortModifiers(ListUtils.concat(mod, md.getModifiers())));
+          md = autoFormat(md, md, p, getCursor().getParent());
         }
-
-        @Override
-        public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext p) {
-            J.MethodDeclaration md = super.visitMethodDeclaration(method, p);
-
-            if (!instanceVariableUsedInMethod) {
-
-                if ((md.hasModifier(J.Modifier.Type.Private)
-                        || md.hasModifier(J.Modifier.Type.Final))
-                        && !md.hasModifier(J.Modifier.Type.Static)) {
-
-                    J.Modifier mod = new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, J.Modifier.Type.Static,
-                            Collections.emptyList());
-
-                    md = md.withModifiers(ModifierOrder.sortModifiers(ListUtils.concat(mod, md.getModifiers())));
-                    md = autoFormat(md, md, p, getCursor().getParent());
-                }
-            }
-            return md;
-        }
-
+      }
+      return md;
     }
+
+  }
 
 }
